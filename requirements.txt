@@ -1,0 +1,2 @@
+playwright==1.29.0       # Check the latest version compatibility for your setup
+pillow                   # For handling icons in Tkinter
