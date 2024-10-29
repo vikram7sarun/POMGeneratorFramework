@@ -6,7 +6,7 @@ class POMView:
     def __init__(self, controller):
         self.controller = controller
         self.root = tk.Tk()
-        self.root.title("Enhanced POM Generator")
+        self.root.title("NessQ POM Generator")
         self.set_colors()
         self.create_widgets()
         self.configure_grid()
