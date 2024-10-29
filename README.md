@@ -1,5 +1,5 @@
 1. main.py
-The entry point to run the application.
+The entry point to run the application...
 
 2. pom_generator/controller.py
 Handles the interaction between the UI (view.py) and the Playwright functions (model.py).
