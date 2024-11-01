@@ -32,7 +32,8 @@ class POMView:
         self.status_bar.grid(row=6, column=0, columnspan=4, sticky="ew")
 
         # Priorities Entry
-        self.label = tk.Label(self.root, text="Enter Selector Priorities:", bg=self.bg_color, fg=self.text_color)
+        self.label = tk.Label(self.root, text="Enter Selector Priorities: \n Eg: ID, Name, ClassName, LinkText, PartialLinkText, "
+                                              "TagName", bg=self.bg_color, fg=self.text_color)
         self.label.grid(row=0, column=0, padx=10, pady=5, sticky="w")
 
         self.entry = tk.Entry(self.root, bg=self.entry_bg, fg=self.text_color, relief="solid")
@@ -69,10 +70,14 @@ class POMView:
         self.moved_text = scrolledtext.ScrolledText(self.root, bg=self.text_bg, fg=self.text_color, relief="solid")
         self.moved_text.grid(row=4, column=0, columnspan=3, padx=10, pady=5, sticky="nsew")
 
+        # Track modifications in moved_text
+        self.moved_text.bind("<<Modified>>", self.on_text_area_modified)
+        self.previous_text = self.moved_text.get("1.0", END)  # Initialize with initial content
+
         # Save Button
         self.save_button = tk.Button(self.root, text="Save to File", command=self.controller.save_to_file,
                                      bg=self.button_bg, relief="groove")
-        self.save_button.grid(row=5, column=0, columnspan=3, sticky="ew", padx=10, pady=10)
+        self.save_button.grid(row=5, column=0, sticky="ew", padx=10, pady=10)
 
         # Text Area 1 (output_text)
         self.output_text = scrolledtext.ScrolledText(self.root, bg=self.text_bg, fg=self.text_color, relief="solid")
@@ -86,6 +91,12 @@ class POMView:
         # Text Area 2 (moved_text) for moved text
         self.moved_text = scrolledtext.ScrolledText(self.root, bg=self.text_bg, fg=self.text_color, relief="solid")
         self.moved_text.grid(row=4, column=0, columnspan=3, padx=10, pady=5, sticky="nsew")
+
+        #Clear POM
+        self.clear_button = tk.Button(self.root, text="Clear POM", command=self.controller.clear_generated_pom,bg=self.button_bg, relief="groove")
+        self.clear_button.grid(row=5, column=2, sticky="ew", padx=10, pady=10)
+
+
 
 
     def configure_grid(self):
@@ -178,7 +189,21 @@ class POMView:
         self.output_text.tag_configure("green_highlight", background=self.highlight_color)
 
     def move_text(self, text):
-        """Move the selected text to Text Area 2 and highlight it in green in Text Area 1."""
+        # Check if Text Area 2 contains POM structure markers
+        moved_text_content = self.moved_text.get("1.0", END)
+        if "# Locators" in moved_text_content and "# Functions" in moved_text_content:
+            # Show alert to clear POM before moving new selectors
+            messagebox.showinfo("Move Selector", "Clear POM before moving new selector.")
+            return  # Exit without moving text
+
+        existing_text = self.moved_text.get("1.0", END).strip().splitlines()
+
+        # Check if the text is already in Text Area 2
+        if text.strip() in existing_text:
+            # Show alert for duplicate selector
+            messagebox.showinfo("Duplicate Selector","Duplicate selector! This selector is already added.")
+            return  # Exit without adding duplicate text
+
         # Insert the selected text into Text Area 2
         self.moved_text.insert(END, text + "\n")
 
@@ -194,3 +219,20 @@ class POMView:
         except tk.TclError:
             # If no text is selected, ignore
             messagebox.showinfo("No Selection", "Please select text to move.")
+
+    def on_text_area_modified(self, event):
+        """Event handler to track manual deletions in Text Area 2."""
+        self.moved_text.edit_modified(False)  # Reset the modified flag
+
+        current_text = self.moved_text.get("1.0", END).strip()
+
+        # Check for removed lines by comparing with previous content
+        removed_lines = set(self.previous_text.splitlines()) - set(current_text.splitlines())
+
+        if removed_lines:
+            # Call controller's method to handle removed selectors
+            removed_text = "\n".join(removed_lines)
+            self.controller.remove_selector_lines(removed_text)
+
+        # Update previous_text to current content
+        self.previous_text = current_text
